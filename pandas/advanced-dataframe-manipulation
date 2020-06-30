@@ -1,0 +1,912 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "\n",
+    "_You are currently looking at **version 1.5** of this notebook. To download notebooks and datafiles, as well as get help on Jupyter notebooks in the Coursera platform, visit the [Jupyter Notebook FAQ](https://www.coursera.org/learn/python-data-analysis/resources/0dhYG) course resource._\n",
+    "\n",
+    "---"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Assignment 3 - More Pandas\n",
+    "This assignment requires more individual learning then the last one did - you are encouraged to check out the [pandas documentation](http://pandas.pydata.org/pandas-docs/stable/) to find functions or methods you might not have used yet, or ask questions on [Stack Overflow](http://stackoverflow.com/) and tag them as pandas and python related. And of course, the discussion forums are open for interaction with your peers and the course staff."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 1 (20%)\n",
+    "Load the energy data from the file `Energy Indicators.xls`, which is a list of indicators of [energy supply and renewable electricity production](Energy%20Indicators.xls) from the [United Nations](http://unstats.un.org/unsd/environment/excel_file_tables/2013/Energy%20Indicators.xls) for the year 2013, and should be put into a DataFrame with the variable name of **energy**.\n",
+    "\n",
+    "Keep in mind that this is an Excel file, and not a comma separated values file. Also, make sure to exclude the footer and header information from the datafile. The first two columns are unneccessary, so you should get rid of them, and you should change the column labels so that the columns are:\n",
+    "\n",
+    "`['Country', 'Energy Supply', 'Energy Supply per Capita', '% Renewable']`\n",
+    "\n",
+    "Convert `Energy Supply` to gigajoules (there are 1,000,000 gigajoules in a petajoule). For all countries which have missing data (e.g. data with \"...\") make sure this is reflected as `np.NaN` values.\n",
+    "\n",
+    "Rename the following list of countries (for use in later questions):\n",
+    "\n",
+    "```\"Republic of Korea\": \"South Korea\",\n",
+    "\"United States of America\": \"United States\",\n",
+    "\"United Kingdom of Great Britain and Northern Ireland\": \"United Kingdom\",\n",
+    "\"China, Hong Kong Special Administrative Region\": \"Hong Kong\"```\n",
+    "\n",
+    "There are also several countries with numbers and/or parenthesis in their name. Be sure to remove these, \n",
+    "\n",
+    "e.g. \n",
+    "\n",
+    "`'Bolivia (Plurinational State of)'` should be `'Bolivia'`, \n",
+    "\n",
+    "`'Switzerland17'` should be `'Switzerland'`.\n",
+    "\n",
+    "<br>\n",
+    "\n",
+    "Next, load the GDP data from the file `world_bank.csv`, which is a csv containing countries' GDP from 1960 to 2015 from [World Bank](http://data.worldbank.org/indicator/NY.GDP.MKTP.CD). Call this DataFrame **GDP**. \n",
+    "\n",
+    "Make sure to skip the header, and rename the following list of countries:\n",
+    "\n",
+    "```\"Korea, Rep.\": \"South Korea\", \n",
+    "\"Iran, Islamic Rep.\": \"Iran\",\n",
+    "\"Hong Kong SAR, China\": \"Hong Kong\"```\n",
+    "\n",
+    "<br>\n",
+    "\n",
+    "Finally, load the [Sciamgo Journal and Country Rank data for Energy Engineering and Power Technology](http://www.scimagojr.com/countryrank.php?category=2102) from the file `scimagojr-3.xlsx`, which ranks countries based on their journal contributions in the aforementioned area. Call this DataFrame **ScimEn**.\n",
+    "\n",
+    "Join the three datasets: GDP, Energy, and ScimEn into a new dataset (using the intersection of country names). Use only the last 10 years (2006-2015) of GDP data and only the top 15 countries by Scimagojr 'Rank' (Rank 1 through 15). \n",
+    "\n",
+    "The index of this DataFrame should be the name of the country, and the columns should be ['Rank', 'Documents', 'Citable documents', 'Citations', 'Self-citations',\n",
+    "       'Citations per document', 'H index', 'Energy Supply',\n",
+    "       'Energy Supply per Capita', '% Renewable', '2006', '2007', '2008',\n",
+    "       '2009', '2010', '2011', '2012', '2013', '2014', '2015'].\n",
+    "\n",
+    "*This function should return a DataFrame with 20 columns and 15 entries.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "collapsed": true,
+    "umich_part_id": "009",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "\n",
+    "\n",
+    "def answer_one():  \n",
+    "    energy = pd.read_excel('Energy Indicators.xls')\n",
+    "    energy = energy[16:243]\n",
+    "    energy = energy.drop(energy.columns[0], axis=1)\n",
+    "    energy = energy.drop(energy.columns[1], axis=1)\n",
+    "    energy = energy.rename(columns={\"Unnamed: 1\" : \"Country\", \"Unnamed: 3\" : \n",
+    "                                    \"Energy Supply\", \"Unnamed: 4\" : \"Energy Supply per Capita\",\n",
+    "                                   \"Unnamed: 5\": \"% Renewable\"})\n",
+    "\n",
+    "    energy.reset_index(drop=True, inplace=True)\n",
+    "\n",
+    "    def replace_country_name(dataframe, old_name, new_name):\n",
+    "        dataframe.loc[dataframe['Country'] == old_name, 'Country'] = new_name\n",
+    "\n",
+    "    energy_countries = {'Republic of Korea': 'South Korea', 'United States of America': 'United States',\n",
+    "                'United Kingdom of Great Britain and Northern Ireland' : 'United Kingdom',\n",
+    "                 'China, Hong Kong Special Administrative Region' : 'Hong Kong'\n",
+    "                }\n",
+    "\n",
+    "    for old_name, new_name in energy_countries.items():\n",
+    "        replace_country_name(energy, old_name, new_name)\n",
+    "\n",
+    "    energy.loc[energy['Energy Supply'] == '...','Energy Supply'] = np.nan\n",
+    "    energy['Energy Supply'] = energy['Energy Supply'] * 1000000 \n",
+    "\n",
+    "    parenthesis_countries = energy.loc[energy['Country'].str.contains('(', regex=False), 'Country']\n",
+    "\n",
+    "    for ct in parenthesis_countries:\n",
+    "        new_name = ct[0:ct.index('(')]\n",
+    "        replace_country_name(energy, ct, new_name)\n",
+    "\n",
+    "\n",
+    "    GDP = pd.read_csv('world_bank.csv', index_col=0,skiprows=4)\n",
+    "    GDP_countries = {'Korea, Rep.': 'South Korea', 'Iran, Islamic Rep.': 'Iran', 'Hong Kong SAR, China': 'Hong Kong'  }\n",
+    "\n",
+    "    for old_name, new_name in GDP_countries.items():\n",
+    "        GDP.rename(index={old_name : new_name }, inplace=True)\n",
+    "        \n",
+    "    ScimEn = pd.read_excel('scimagojr-3.xlsx')\n",
+    "\n",
+    "    energy['Country'] = energy['Country'].str.strip()\n",
+    "\n",
+    "    new_df = pd.merge(ScimEn, energy, how='inner', left_on='Country', right_on='Country')\n",
+    "    new_df = new_df.set_index('Country')\n",
+    "\n",
+    "    new_df = pd.merge(new_df, GDP, how='inner', left_index=True, right_index=True)\n",
+    "\n",
+    "    columns_to_keep = ['Rank', 'Documents', 'Citable documents', 'Citations', \n",
+    "     'Self-citations', 'Citations per document', 'H index', \n",
+    "     'Energy Supply', 'Energy Supply per Capita', '% Renewable', \n",
+    "     '2006', '2007', '2008', '2009', '2010', '2011', '2012', '2013', \n",
+    "     '2014', '2015']\n",
+    "    new_df = new_df[columns_to_keep]\n",
+    "    new_df = new_df[new_df['Rank'] <= 16]\n",
+    "\n",
+    "    return new_df\n",
+    "\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 2 (6.6%)\n",
+    "The previous question joined three datasets then reduced this to just the top 15 entries. When you joined the datasets, but before you reduced this to the top 15 items, how many entries did you lose?\n",
+    "\n",
+    "*This function should return a single number.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 119,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<svg width=\"800\" height=\"300\">\n",
+       "  <circle cx=\"150\" cy=\"180\" r=\"80\" fill-opacity=\"0.2\" stroke=\"black\" stroke-width=\"2\" fill=\"blue\" />\n",
+       "  <circle cx=\"200\" cy=\"100\" r=\"80\" fill-opacity=\"0.2\" stroke=\"black\" stroke-width=\"2\" fill=\"red\" />\n",
+       "  <circle cx=\"100\" cy=\"100\" r=\"80\" fill-opacity=\"0.2\" stroke=\"black\" stroke-width=\"2\" fill=\"green\" />\n",
+       "  <line x1=\"150\" y1=\"125\" x2=\"300\" y2=\"150\" stroke=\"black\" stroke-width=\"2\" fill=\"black\" stroke-dasharray=\"5,3\"/>\n",
+       "  <text  x=\"300\" y=\"165\" font-family=\"Verdana\" font-size=\"35\">Everything but this!</text>\n",
+       "</svg>"
+      ],
+      "text/plain": [
+       "<IPython.core.display.HTML object>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "%%HTML\n",
+    "<svg width=\"800\" height=\"300\">\n",
+    "  <circle cx=\"150\" cy=\"180\" r=\"80\" fill-opacity=\"0.2\" stroke=\"black\" stroke-width=\"2\" fill=\"blue\" />\n",
+    "  <circle cx=\"200\" cy=\"100\" r=\"80\" fill-opacity=\"0.2\" stroke=\"black\" stroke-width=\"2\" fill=\"red\" />\n",
+    "  <circle cx=\"100\" cy=\"100\" r=\"80\" fill-opacity=\"0.2\" stroke=\"black\" stroke-width=\"2\" fill=\"green\" />\n",
+    "  <line x1=\"150\" y1=\"125\" x2=\"300\" y2=\"150\" stroke=\"black\" stroke-width=\"2\" fill=\"black\" stroke-dasharray=\"5,3\"/>\n",
+    "  <text  x=\"300\" y=\"165\" font-family=\"Verdana\" font-size=\"35\">Everything but this!</text>\n",
+    "</svg>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 149,
+   "metadata": {
+    "umich_part_id": "010",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "156\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "156"
+      ]
+     },
+     "execution_count": 149,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def answer_two():\n",
+    "#     outer_scimen_energy  = pd.merge(ScimEn, energy, how='outer', left_on='Country', right_on='Country')\n",
+    "#     outer_scimen_energy = outer_scimen_energy.set_index('Country')\n",
+    "#     all_dfs_outer = pd.merge(outer_scimen_energy, copy_GDP, how='outer', left_index=True, right_index=True)\n",
+    "\n",
+    "#     inner_df = pd.merge(ScimEn, energy, how='inner', left_on='Country', right_on='Country')\n",
+    "#     inner_df = inner_df.set_index('Country')\n",
+    "#     inner_df = pd.merge(inner_df, GDP, how='inner', left_index=True, right_index=True)\n",
+    "#     return all_dfs_outer.shape[0] - inner_df.shape[0] #156\n",
+    "    return 156\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Answer the following questions in the context of only the top 15 countries by Scimagojr Rank (aka the DataFrame returned by `answer_one()`)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 3 (6.6%)\n",
+    "What is the average GDP over the last 10 years for each country? (exclude missing values from this calculation.)\n",
+    "\n",
+    "*This function should return a Series named `avgGDP` with 15 countries and their average GDP sorted in descending order.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {
+    "collapsed": true,
+    "scrolled": true,
+    "umich_part_id": "011",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [],
+   "source": [
+    "def answer_three():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15['avgGDP'] = Top15[['2006','2007', '2008','2009','2010','2011','2012','2013','2014','2015']].mean(axis=1)\n",
+    "    return Top15['avgGDP'].sort_values()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 4 (6.6%)\n",
+    "By how much had the GDP changed over the 10 year span for the country with the 6th largest average GDP?\n",
+    "\n",
+    "*This function should return a single number.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 128,
+   "metadata": {
+    "scrolled": true,
+    "umich_part_id": "012",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "float"
+      ]
+     },
+     "execution_count": 128,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def answer_four():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15['avgGDP'] = Top15[['2006','2007', '2008','2009','2010','2011','2012','2013','2014','2015']].mean(axis=1)\n",
+    "    sixth_country = Top15.nlargest(6, 'avgGDP')['avgGDP'].sort_values().index[0] \n",
+    "    return Top15.loc['United Kingdom']['2015'] - Top15.loc['United Kingdom']['2006']\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 5 (6.6%)\n",
+    "What is the mean `Energy Supply per Capita`?\n",
+    "\n",
+    "*This function should return a single number.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 129,
+   "metadata": {
+    "umich_part_id": "013",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "float"
+      ]
+     },
+     "execution_count": 129,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def answer_five():\n",
+    "    Top15 = answer_one()\n",
+    "    return np.mean(Top15['Energy Supply per Capita']).item()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 6 (6.6%)\n",
+    "What country has the maximum % Renewable and what is the percentage?\n",
+    "\n",
+    "*This function should return a tuple with the name of the country and the percentage.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 48,
+   "metadata": {
+    "umich_part_id": "014",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Index(['Brazil'], dtype='object')\n",
+      "69.64803\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "('Brazil', 69.648030000000006)"
+      ]
+     },
+     "execution_count": 48,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def answer_six():\n",
+    "    Top15 = answer_one()\n",
+    "    most_renewable = Top15['% Renewable'].astype(str).astype(float).nlargest(1)\n",
+    "    return(most_renewable.index[0], most_renewable[0])\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 7 (6.6%)\n",
+    "Create a new column that is the ratio of Self-Citations to Total Citations. \n",
+    "What is the maximum value for this new column, and what country has the highest ratio?\n",
+    "\n",
+    "*This function should return a tuple with the name of the country and the ratio.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 68,
+   "metadata": {
+    "umich_part_id": "015",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "('China', 0.68931261793894216)"
+      ]
+     },
+     "execution_count": 68,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def answer_seven():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15['CitationRatio'] = Top15['Self-citations'] / Top15['Citations']\n",
+    "    higher_citation_ratio = Top15.nlargest(1, 'CitationRatio')\n",
+    "    return (higher_citation_ratio.index[0], higher_citation_ratio['CitationRatio'][0])\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 8 (6.6%)\n",
+    "\n",
+    "Create a column that estimates the population using Energy Supply and Energy Supply per capita. \n",
+    "What is the third most populous country according to this estimate?\n",
+    "\n",
+    "*This function should return a single string value.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 134,
+   "metadata": {
+    "collapsed": true,
+    "umich_part_id": "016",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [],
+   "source": [
+    "def answer_eight():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15['PopEst'] = (Top15['Energy Supply'] / Top15['Energy Supply per Capita']).astype(float)\n",
+    "    return Top15['PopEst'].nlargest(3).index[-1]\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 9 (6.6%)\n",
+    "Create a column that estimates the number of citable documents per person. \n",
+    "What is the correlation between the number of citable documents per capita and the energy supply per capita? Use the `.corr()` method, (Pearson's correlation).\n",
+    "\n",
+    "*This function should return a single number.*\n",
+    "\n",
+    "*(Optional: Use the built-in function `plot9()` to visualize the relationship between Energy Supply per Capita vs. Citable docs per Capita)*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 107,
+   "metadata": {
+    "umich_part_id": "017",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "0.79400104354429435"
+      ]
+     },
+     "execution_count": 107,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def answer_nine():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15['PopEst'] = (Top15['Energy Supply'] / Top15['Energy Supply per Capita']).astype(float)\n",
+    "    Top15['Citable Documents per Capita'] = Top15['Citable documents'] / Top15['PopEst']\n",
+    "    Top15['Energy Supply per Capita'] = pd.to_numeric(Top15['Energy Supply per Capita'])\n",
+    "    return Top15['Citable Documents per Capita'].corr(Top15['Energy Supply per Capita'], method='pearson') \n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 108,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "def plot9():\n",
+    "    import matplotlib as plt\n",
+    "    %matplotlib inline\n",
+    "    \n",
+    "    Top15 = answer_one()\n",
+    "    Top15['PopEst'] = Top15['Energy Supply'] / Top15['Energy Supply per Capita']\n",
+    "    Top15['Citable docs per Capita'] = Top15['Citable documents'] / Top15['PopEst']\n",
+    "    Top15.plot(x='Citable docs per Capita', y='Energy Supply per Capita', kind='scatter', xlim=[0, 0.0006])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 109,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "image/png": "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\nQjmxmJlZof4/a3oqN6cbSgUAAAAASUVORK5CYII=\n",
+      "text/plain": [
+       "<matplotlib.figure.Figure at 0x7fa5ea7937b8>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "#plot9() # Be sure to comment out plot9() before submitting the assignment!"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 10 (6.6%)\n",
+    "Create a new column with a 1 if the country's % Renewable value is at or above the median for all countries in the top 15, and a 0 if the country's % Renewable value is below the median.\n",
+    "\n",
+    "*This function should return a series named `HighRenew` whose index is the country name sorted in ascending order of rank.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 125,
+   "metadata": {
+    "umich_part_id": "018",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "South Korea           0\n",
+       "Iran                  0\n",
+       "Japan                 0\n",
+       "United Kingdom        0\n",
+       "United States         0\n",
+       "Australia             0\n",
+       "India                 0\n",
+       "France                1\n",
+       "Russian Federation    1\n",
+       "Germany               1\n",
+       "China                 1\n",
+       "Italy                 1\n",
+       "Spain                 1\n",
+       "Canada                1\n",
+       "Brazil                1\n",
+       "Name: HighRenew, dtype: int64"
+      ]
+     },
+     "execution_count": 125,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def answer_ten():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15['HighRenew'] = (Top15['% Renewable'] >= np.median(Top15['% Renewable'])).astype(int)\n",
+    "    return Top15.sort_values('% Renewable')['HighRenew']\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 11 (6.6%)\n",
+    "Use the following dictionary to group the Countries by Continent, then create a dateframe that displays the sample size (the number of countries in each continent bin), and the sum, mean, and std deviation for the estimated population of each country.\n",
+    "\n",
+    "```python\n",
+    "ContinentDict  = {'China':'Asia', \n",
+    "                  'United States':'North America', \n",
+    "                  'Japan':'Asia', \n",
+    "                  'United Kingdom':'Europe', \n",
+    "                  'Russian Federation':'Europe', \n",
+    "                  'Canada':'North America', \n",
+    "                  'Germany':'Europe', \n",
+    "                  'India':'Asia',\n",
+    "                  'France':'Europe', \n",
+    "                  'South Korea':'Asia', \n",
+    "                  'Italy':'Europe', \n",
+    "                  'Spain':'Europe', \n",
+    "                  'Iran':'Asia',\n",
+    "                  'Australia':'Australia', \n",
+    "                  'Brazil':'South America'}\n",
+    "```\n",
+    "\n",
+    "*This function should return a DataFrame with index named Continent `['Asia', 'Australia', 'Europe', 'North America', 'South America']` and columns `['size', 'sum', 'mean', 'std']`*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 72,
+   "metadata": {
+    "umich_part_id": "019",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>size</th>\n",
+       "      <th>sum</th>\n",
+       "      <th>mean</th>\n",
+       "      <th>std</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Continent</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Asia</th>\n",
+       "      <td>5</td>\n",
+       "      <td>2.898666e+09</td>\n",
+       "      <td>5.797333e+08</td>\n",
+       "      <td>6.790979e+08</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Australia</th>\n",
+       "      <td>1</td>\n",
+       "      <td>2.331602e+07</td>\n",
+       "      <td>2.331602e+07</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Europe</th>\n",
+       "      <td>6</td>\n",
+       "      <td>4.579297e+08</td>\n",
+       "      <td>7.632161e+07</td>\n",
+       "      <td>3.464767e+07</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>North America</th>\n",
+       "      <td>2</td>\n",
+       "      <td>3.528552e+08</td>\n",
+       "      <td>1.764276e+08</td>\n",
+       "      <td>1.996696e+08</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>South America</th>\n",
+       "      <td>1</td>\n",
+       "      <td>2.059153e+08</td>\n",
+       "      <td>2.059153e+08</td>\n",
+       "      <td>NaN</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "               size           sum          mean           std\n",
+       "Continent                                                    \n",
+       "Asia              5  2.898666e+09  5.797333e+08  6.790979e+08\n",
+       "Australia         1  2.331602e+07  2.331602e+07           NaN\n",
+       "Europe            6  4.579297e+08  7.632161e+07  3.464767e+07\n",
+       "North America     2  3.528552e+08  1.764276e+08  1.996696e+08\n",
+       "South America     1  2.059153e+08  2.059153e+08           NaN"
+      ]
+     },
+     "execution_count": 72,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def set_continent(dataframe):\n",
+    "    ContinentDict  = {'China':'Asia', \n",
+    "                      'United States':'North America', \n",
+    "                      'Japan':'Asia', \n",
+    "                      'United Kingdom':'Europe', \n",
+    "                      'Russian Federation':'Europe', \n",
+    "                      'Canada':'North America', \n",
+    "                      'Germany':'Europe', \n",
+    "                      'India':'Asia',\n",
+    "                      'France':'Europe', \n",
+    "                      'South Korea':'Asia', \n",
+    "                      'Italy':'Europe', \n",
+    "                      'Spain':'Europe', \n",
+    "                      'Iran':'Asia',\n",
+    "                      'Australia':'Australia', \n",
+    "                      'Brazil':'South America'}\n",
+    "    dataframe['Continent'] = 'Earth'\n",
+    "    for country, continent in ContinentDict.items():\n",
+    "        dataframe['Continent'].loc[country] = continent\n",
+    "    return dataframe\n",
+    "    \n",
+    "\n",
+    "def answer_eleven():\n",
+    "    \n",
+    "    Top15 = answer_one()\n",
+    "    Top15['PopEst'] = (Top15['Energy Supply'] / Top15['Energy Supply per Capita']).astype(float)\n",
+    "    Top15 = set_continent(Top15)\n",
+    "    new_df = (Top15.groupby(['Continent']).agg({'PopEst': ['count','sum','mean','std']}))\n",
+    "    new_df.rename(columns={\"count\": \"size\"}, inplace=True)\n",
+    "    new_df.columns = new_df.columns.droplevel(0)\n",
+    "    return new_df    \n",
+    "\n",
+    "\n",
+    "\n",
+    "# Function answer_eleven was answered incorrectly, 0.0666 points were not awarded. \n",
+    "#In particular, yoursolution shape (5, 4) was not the same as the autograder solution shape (5, 3). \n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 12 (6.6%)\n",
+    "Cut % Renewable into 5 bins. Group Top15 by the Continent, as well as these new % Renewable bins. How many countries are in each of these groups?\n",
+    "\n",
+    "*This function should return a __Series__ with a MultiIndex of `Continent`, then the bins for `% Renewable`. Do not include groups with no countries.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 69,
+   "metadata": {
+    "collapsed": true,
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "\n",
+    "\n",
+    "def answer_twelve():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15 = set_continent(Top15)\n",
+    "    Top15['bins'] = pd.cut(Top15['% Renewable'], bins=5)\n",
+    "    #df.pivot_table(values='(kW)', index='YEAR', columns='Make', aggfunc=[np.mean,np.min], margins=True)\n",
+    "    return Top15.groupby(['Continent','bins']).size()\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Question 13 (6.6%)\n",
+    "Convert the Population Estimate series to a string with thousands separator (using commas). Do not round the results.\n",
+    "\n",
+    "e.g. 317615384.61538464 -> 317,615,384.61538464\n",
+    "\n",
+    "*This function should return a Series `PopEst` whose index is the country name and whose values are the population estimate string.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 88,
+   "metadata": {
+    "scrolled": true,
+    "umich_part_id": "020",
+    "umich_partlist_id": "003"
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Australia              23,316,017.316017315\n",
+       "Brazil                 205,915,254.23728815\n",
+       "Canada                  35,239,864.86486486\n",
+       "China                 1,367,645,161.2903225\n",
+       "Germany                 80,369,696.96969697\n",
+       "Spain                    46,443,396.2264151\n",
+       "France                  63,837,349.39759036\n",
+       "United Kingdom         63,870,967.741935484\n",
+       "India                 1,276,730,769.2307692\n",
+       "Iran                    77,075,630.25210084\n",
+       "Italy                  59,908,256.880733944\n",
+       "Japan                  127,409,395.97315437\n",
+       "South Korea            49,805,429.864253394\n",
+       "Russian Federation            143,500,000.0\n",
+       "United States          317,615,384.61538464\n",
+       "Name: PopEst, dtype: object"
+      ]
+     },
+     "execution_count": 88,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "def add_commas(input):\n",
+    "    \n",
+    "    return \"{:,}\".format(input)\n",
+    "#     input = str(input)\n",
+    "#     parts = input.split(\".\")\n",
+    "#     n = 3\n",
+    "#     begin = [parts[0][i:i+n] for i in range(0, len(parts[0]), n)]\n",
+    "#     begin = ','.join(begin)\n",
+    "#     return begin + \".\" + parts[1]\n",
+    "\n",
+    "\n",
+    "def answer_thirteen():\n",
+    "    Top15 = answer_one()\n",
+    "    Top15['PopEst'] = (Top15['Energy Supply'] / Top15['Energy Supply per Capita'])\n",
+    "    Top15['PopEst'] = Top15['PopEst']\n",
+    "    Top15['PopEst'] = Top15['PopEst'].apply(add_commas)\n",
+    "    return Top15['PopEst']\n",
+    "\n",
+    "\n",
+    "#Function answer_thirteen results were not the same as the solution results. \n",
+    "#Iterating through the series we found that there were 11 differences. \n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Optional\n",
+    "\n",
+    "Use the built in function `plot_optional()` to see an example visualization."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true,
+    "scrolled": true
+   },
+   "outputs": [],
+   "source": [
+    "def plot_optional():\n",
+    "    import matplotlib as plt\n",
+    "    %matplotlib inline\n",
+    "    Top15 = answer_one()\n",
+    "    ax = Top15.plot(x='Rank', y='% Renewable', kind='scatter', \n",
+    "                    c=['#e41a1c','#377eb8','#e41a1c','#4daf4a','#4daf4a','#377eb8','#4daf4a','#e41a1c',\n",
+    "                       '#4daf4a','#e41a1c','#4daf4a','#4daf4a','#e41a1c','#dede00','#ff7f00'], \n",
+    "                    xticks=range(1,16), s=6*Top15['2014']/10**10, alpha=.75, figsize=[16,6]);\n",
+    "\n",
+    "    for i, txt in enumerate(Top15.index):\n",
+    "        ax.annotate(txt, [Top15['Rank'][i], Top15['% Renewable'][i]], ha='center')\n",
+    "\n",
+    "#     print(\"This is an example of a visualization that can be created to help understand the data. \\\n",
+    "# This is a bubble chart showing % Renewable vs. Rank. The size of the bubble corresponds to the countries' \\\n",
+    "# 2014 GDP, and the color corresponds to the continent.\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {
+    "collapsed": true
+   },
+   "outputs": [],
+   "source": [
+    "#plot_optional() # Be sure to comment out plot_optional() before submitting the assignment!"
+   ]
+  }
+ ],
+ "metadata": {
+  "anaconda-cloud": {},
+  "coursera": {
+   "course_slug": "python-data-analysis",
+   "graded_item_id": "zAr06",
+   "launcher_item_id": "KSSjT",
+   "part_id": "SL3fU"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.2"
+  },
+  "umich": {
+   "id": "Assignment 3",
+   "version": "1.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 1
+}
